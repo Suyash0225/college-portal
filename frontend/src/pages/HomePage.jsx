@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, LayoutDashboard, FileText, Library, Megaphone,
   Calendar, Info, Mail, Download, Eye, Search, ChevronDown, Filter,
@@ -186,6 +187,7 @@ function AssignmentCard({ a, onMenuToggle, menuOpenId, onMarkDone }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function HomePage() {
+  const navigate = useNavigate();
   const [assignments,   setAssignments]   = useState([]);
   const [resources,     setResources]     = useState([]);
   const [subjects,      setSubjects]      = useState([]);
@@ -344,7 +346,7 @@ export default function HomePage() {
         </div>
 
         <div className="px-3 pb-4 border-t border-gray-100 pt-3">
-          <a href="/login" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-100 transition-colors group">
+          <button onClick={() => navigate("/login")} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-100 transition-colors group">
             <div className="w-9 h-9 rounded-full bg-gray-100 group-hover:bg-violet-100 flex items-center justify-center transition-colors">
               <Lock size={15} className="text-gray-400 group-hover:text-violet-600 transition-colors" />
             </div>
@@ -352,7 +354,7 @@ export default function HomePage() {
               <p className="text-sm font-semibold text-gray-500 group-hover:text-gray-700 transition-colors">Admin Access</p>
               <p className="text-xs text-gray-300">Staff only</p>
             </div>
-          </a>
+          </button>
         </div>
       </div>
     );

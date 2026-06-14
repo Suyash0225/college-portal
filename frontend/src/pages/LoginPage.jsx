@@ -80,7 +80,7 @@ export default function LoginPage() {
             </button>
           </form>
           <p className="text-xs text-gray-400 text-center mt-4">
-            Default: <span className="font-mono">admin</span> / <span className="font-mono">admin123</span>
+            Contact your administrator for credentials.
           </p>
         </div>
       </div>
