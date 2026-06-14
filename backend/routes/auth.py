@@ -1,8 +1,10 @@
 import os
 import time
+import datetime
 from collections import defaultdict
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, current_app
 import bcrypt
+from jose import jwt as jose_jwt
 from models import db, Admin
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -70,7 +72,13 @@ def login():
     _clear_fail(ip)
     session["admin_id"] = admin.id
     session.permanent = True
-    return jsonify({"message": "Login successful", "admin": admin.to_dict()}), 200
+
+    token = jose_jwt.encode(
+        {"admin_id": admin.id, "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7)},
+        current_app.config["SECRET_KEY"],
+        algorithm="HS256",
+    )
+    return jsonify({"message": "Login successful", "admin": admin.to_dict(), "token": token}), 200
 
 
 @auth_bp.route("/logout", methods=["POST"])

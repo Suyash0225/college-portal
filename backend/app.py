@@ -70,6 +70,19 @@ def create_app():
 
     db.init_app(app)
 
+    @app.before_request
+    def load_token_into_session():
+        """Accept JWT from Authorization header so all routes work cross-origin."""
+        from flask import request as req, session as sess
+        auth = req.headers.get("Authorization", "")
+        if auth.startswith("Bearer ") and not sess.get("admin_id"):
+            try:
+                from jose import jwt as jose_jwt
+                payload = jose_jwt.decode(auth[7:], app.config["SECRET_KEY"], algorithms=["HS256"])
+                sess["admin_id"] = payload.get("admin_id")
+            except Exception:
+                pass
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(teachers_bp)
     app.register_blueprint(subjects_bp)

@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { data } = await login(form);
-      signIn(data.admin);
+      signIn(data.admin, data.token);
       toast.success("Welcome back!");
       navigate("/admin");
     } catch (err) {
