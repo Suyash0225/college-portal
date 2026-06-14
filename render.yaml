@@ -9,4 +9,14 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ALLOWED_ORIGINS
-        value: https://your-site.netlify.app
+        value: https://your-site.onrender.com
+
+  - type: static
+    name: college-portal-frontend
+    rootDir: frontend
+    buildCommand: npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
