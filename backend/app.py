@@ -66,22 +66,31 @@ def create_app():
 
     raw_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
     allowed_origins = [o.strip() for o in raw_origins.split(",")]
-    CORS(app, supports_credentials=True, origins=allowed_origins)
+    CORS(app,
+         supports_credentials=True,
+         origins=allowed_origins,
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
     db.init_app(app)
 
     @app.before_request
-    def load_token_into_session():
-        """Accept JWT from Authorization header so all routes work cross-origin."""
-        from flask import request as req, session as sess
+    def load_token():
+        """Decode JWT from Authorization header into g and session for all routes."""
+        from flask import request as req, session as sess, g as fg
         auth = req.headers.get("Authorization", "")
-        if auth.startswith("Bearer ") and not sess.get("admin_id"):
+        if auth.startswith("Bearer "):
             try:
                 from jose import jwt as jose_jwt
                 payload = jose_jwt.decode(auth[7:], app.config["SECRET_KEY"], algorithms=["HS256"])
-                sess["admin_id"] = payload.get("admin_id")
+                admin_id = payload.get("admin_id")
+                fg.admin_id = admin_id
+                sess["admin_id"] = admin_id
             except Exception:
-                pass
+                fg.admin_id = None
+        else:
+            from flask import g as fg
+            fg.admin_id = sess.get("admin_id")
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(teachers_bp)

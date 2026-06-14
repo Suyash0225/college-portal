@@ -2,7 +2,7 @@ import os
 import time
 import datetime
 from collections import defaultdict
-from flask import Blueprint, request, jsonify, session, current_app
+from flask import Blueprint, request, jsonify, session, current_app, g
 import bcrypt
 from jose import jwt as jose_jwt
 from models import db, Admin
@@ -89,7 +89,7 @@ def logout():
 
 @auth_bp.route("/me", methods=["GET"])
 def me():
-    admin_id = session.get("admin_id")
+    admin_id = g.get("admin_id") or session.get("admin_id")
     if not admin_id:
         return jsonify({"error": "Not authenticated"}), 401
     admin = Admin.query.get(admin_id)
