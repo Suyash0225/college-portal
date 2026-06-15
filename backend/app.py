@@ -1,7 +1,6 @@
 import os
 from flask import Flask
 from flask_cors import CORS
-from sqlalchemy import text
 from models import db
 from routes.auth import auth_bp, seed_admin
 from routes.teachers import teachers_bp
@@ -14,51 +13,17 @@ from routes.submissions import submissions_bp
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
-def run_migrations(app):
-    """Apply pending schema changes that db.create_all() won't handle."""
-    with app.app_context():
-        with db.engine.connect() as conn:
-            # Migration tracking table
-            conn.execute(text(
-                "CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY)"
-            ))
-            conn.commit()
-
-            # v1 — make teachers.email nullable
-            if not conn.execute(
-                text("SELECT 1 FROM _migrations WHERE name='v1_teachers_email_nullable'")
-            ).fetchone():
-                conn.execute(text("PRAGMA foreign_keys=OFF"))
-                conn.execute(text("DROP TABLE IF EXISTS _teachers_new"))
-                conn.execute(text("""
-                    CREATE TABLE _teachers_new (
-                        id       INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name     VARCHAR(100) NOT NULL,
-                        email    VARCHAR(150)  UNIQUE,
-                        created_at DATETIME
-                    )
-                """))
-                conn.execute(text(
-                    "INSERT INTO _teachers_new (id, name, email, created_at) "
-                    "SELECT id, name, email, created_at FROM teachers"
-                ))
-                conn.execute(text("DROP TABLE teachers"))
-                conn.execute(text("ALTER TABLE _teachers_new RENAME TO teachers"))
-                conn.execute(text("PRAGMA foreign_keys=ON"))
-                conn.execute(text(
-                    "INSERT INTO _migrations VALUES ('v1_teachers_email_nullable')"
-                ))
-                conn.commit()
-                print("[migration] v1_teachers_email_nullable applied")
-
-
 def create_app():
     app = Flask(__name__)
 
     is_production = bool(os.environ.get("RENDER"))
 
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(BASE_DIR, 'assignments.db')}"
+
+    database_url = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'assignments.db')}")
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "None" if is_production else "Lax"
@@ -76,7 +41,6 @@ def create_app():
 
     @app.before_request
     def load_token():
-        """Decode JWT from Authorization header into g and session for all routes."""
         from flask import request as req, session as sess, g as fg
         auth = req.headers.get("Authorization", "")
         if auth.startswith("Bearer "):
@@ -103,8 +67,6 @@ def create_app():
     with app.app_context():
         db.create_all()
         seed_admin()
-
-    run_migrations(app)
 
     return app
 
